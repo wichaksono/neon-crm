@@ -1,15 +1,20 @@
 ## Todos
-- [ ] Customers (CRUD, Navigation Group, Navigation Order, Icons)
-- [ ] Companies (CRUD, Navigation Group, Navigation Order, Icons)
-- [ ] Histories (CRUD, Navigation Group, Navigation Order, Icons)
-- [ ] Invoices (CRUD, Navigation Group, Navigation Order, Icons)
-- [ ] Orders (CRUD, Navigation Group, Navigation Order, Icons)
-- [ ] Products (CRUD, Navigation Group, Navigation Order, Icons)
-- [ ] Recurrings (CRUD, Navigation Group, Navigation Order, Icons)
+- [ ] Customers (CRUD)
+- [ ] Companies (CRUD)
+- [ ] Histories (CRUD)
+- [ ] Invoices (CRUD)
+- [ ] Orders (CRUD)
+- [ ] Products (CRUD)
+- [ ] Recurrings (CRUD)
 
 ### Navigation Group
-- Contacts
-- Transactions
-- Products
-- System
-- Users
+- Contacts 10-30
+- Transactions 40-60
+- Products 70-90
+- System 100-120
+- Users 130-150
+
+### Projects
+- timeline
+- kanban
+- file/documents

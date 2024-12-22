@@ -18,7 +18,11 @@ class CompanyResource extends Resource
 {
     protected static ?string $model = Company::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Contacts';
+
+    protected static ?string $navigationIcon = 'hugeicons-building-03';
+
+    protected static ?int $navigationSort = 15;
 
     public static function form(Form $form): Form
     {

@@ -17,7 +17,11 @@ class RecurringResource extends Resource
 {
     protected static ?string $model = Recurring::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Systems';
+
+    protected static ?string $navigationIcon = 'hugeicons-clock-03';
+
+    protected static ?int $navigationSort = 100;
 
     public static function form(Form $form): Form
     {
