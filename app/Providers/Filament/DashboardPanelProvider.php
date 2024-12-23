@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\CustomerResource;
+use App\Filament\Resources\OrderResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -12,13 +14,17 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+use function view;
 
 class DashboardPanelProvider extends PanelProvider
 {
@@ -66,6 +72,13 @@ class DashboardPanelProvider extends PanelProvider
                     ->icon('heroicon-o-presentation-chart-line')
                     ->sort(3),
             ])
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn () => view('dropdown', [
+                    'newOrderUrl' => OrderResource::getUrl('create'),
+                    'newCustomerUrl' => CustomerResource::getUrl('create'),
+                ])
+            )
             ->collapsibleNavigationGroups(false);
     }
 }
