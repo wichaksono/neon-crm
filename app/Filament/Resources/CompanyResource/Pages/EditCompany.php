@@ -5,6 +5,7 @@ namespace App\Filament\Resources\CompanyResource\Pages;
 use App\Filament\Resources\CompanyResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\Alignment;
 
 class EditCompany extends EditRecord
 {
@@ -13,9 +14,13 @@ class EditCompany extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
             Actions\ForceDeleteAction::make(),
             Actions\RestoreAction::make(),
         ];
+    }
+
+    public function getFormActionsAlignment(): Alignment|string
+    {
+        return Alignment::End;
     }
 }

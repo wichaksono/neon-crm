@@ -3,9 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CompanyResource\Pages;
-use App\Filament\Resources\CompanyResource\RelationManagers;
 use App\Models\Common\Constants\CustomerConstant;
 use App\Models\Company;
+use App\Models\Customer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -29,37 +29,50 @@ class CompanyResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('full_name')
+                    ->label('Company Name')
+                    ->placeholder('PT Mahardika Digitaloka Wichaksana')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('nick_name')
+                    ->label('Short Name')
+                    ->placeholder('Mahardika Digital')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('email')
                     ->email()
+                    ->placeholder('contact@mhdigital.com')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('phone')
+                    ->label('Phone Number')
+                    ->placeholder('081234567890')
                     ->tel()
                     ->maxLength(255)
                     ->default(null),
+
                 Forms\Components\Textarea::make('address')
+                    ->label('Address')
+                    ->placeholder('Jl. Raya Kedungkandang No. 123')
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('city')
+                    ->label('City')
+                    ->placeholder('Malang')
                     ->maxLength(255)
                     ->default(null),
                 Forms\Components\TextInput::make('state')
+                    ->label('State')
+                    ->placeholder('East Java')
                     ->maxLength(255)
                     ->default(null),
                 Forms\Components\TextInput::make('postal_code')
+                    ->label('Postal Code')
+                    ->placeholder('65163')
                     ->maxLength(255)
                     ->default(null),
                 Forms\Components\TextInput::make('country')
+                    ->label('Country')
+                    ->placeholder('Indonesia')
                     ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('type')
-                    ->required(),
-                Forms\Components\TextInput::make('company_id')
-                    ->numeric()
                     ->default(null),
                 Forms\Components\TextInput::make('industry')
                     ->maxLength(255)
@@ -67,17 +80,14 @@ class CompanyResource extends Resource
                 Forms\Components\TextInput::make('website')
                     ->maxLength(255)
                     ->default(null),
-                Forms\Components\TextInput::make('person_id')
-                    ->numeric()
+                Forms\Components\Select::make('person_id')
+                    ->options(Customer::all()
+                        ->where('type', CustomerConstant::TYPE_PERSON)
+                        ->pluck('full_name', 'id')->toArray())
                     ->default(null),
                 Forms\Components\TextInput::make('avatar')
+                    ->label('Logo')
                     ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('label')
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('created_by')
-                    ->numeric()
                     ->default(null),
             ]);
     }

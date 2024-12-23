@@ -109,6 +109,8 @@ class CustomerResource extends Resource
             })
             ->columns([
                 Tables\Columns\ImageColumn::make('avatar')
+                    ->circular()
+                    ->defaultImageUrl('https://placehold.co/150')
                     ->label('Avatar'),
                 Tables\Columns\TextColumn::make('full_name')
                     ->searchable(),
