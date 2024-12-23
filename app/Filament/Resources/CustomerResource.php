@@ -104,9 +104,6 @@ class CustomerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->query(function (): Builder {
-                return Customer::query()->where('type', CustomerConstant::TYPE_PERSON);
-            })
             ->columns([
                 Tables\Columns\ImageColumn::make('avatar')
                     ->circular()
@@ -212,6 +209,7 @@ class CustomerResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->where('type', CustomerConstant::TYPE_PERSON)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

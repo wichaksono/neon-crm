@@ -19,7 +19,7 @@ class CreateCompany extends CreateRecord
     protected function mutateFormDataBeforeCreate($data): array
     {
         $data['created_by'] = auth()->id();
-        $data['type']       = CustomerConstant::TYPE_PERSON;
+        $data['type']       = CustomerConstant::TYPE_COMPANY;
 
         return $data;
     }
