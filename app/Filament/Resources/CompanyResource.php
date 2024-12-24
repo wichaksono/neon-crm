@@ -9,6 +9,7 @@ use App\Models\Customer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -64,9 +65,7 @@ class CompanyResource extends Resource
 
                 Forms\Components\Select::make('industry')
                     ->options(
-                        collect(CustomerConstant::INDUSTRIES)
-                            ->mapWithKeys(fn($industry) => [$industry => $industry])
-                            ->toArray()
+                        CustomerConstant::INDUSTRIES
                     )
                     ->searchable(),
                 Forms\Components\TextInput::make('website')
@@ -124,8 +123,18 @@ class CompanyResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->copyable()
+                    ->copyMessage('Email address copied')
+                    ->copyMessageDuration(1500)
+                    ->icon('hugeicons-copy-02')
+                    ->iconPosition(IconPosition::After)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
+                    ->copyable()
+                    ->copyMessage('Phone number copied')
+                    ->copyMessageDuration(1500)
+                    ->icon('hugeicons-copy-02')
+                    ->iconPosition(IconPosition::After)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('city')
                     ->searchable(),
@@ -139,11 +148,13 @@ class CompanyResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('industry')
+                    ->label('Industry')
+                    ->formatStateUsing(fn ($state) => CustomerConstant::INDUSTRIES[$state] ?? $state)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('website')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('person_id')
+                Tables\Columns\TextColumn::make('person.full_name')
                     ->numeric()
                     ->sortable(),
 
@@ -168,6 +179,7 @@ class CompanyResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -184,6 +196,7 @@ class CompanyResource extends Resource
         return [
             'index'  => Pages\ListCompanies::route('/'),
             'create' => Pages\CreateCompany::route('/create'),
+            'view'   => Pages\ViewCompany::route('/{record}'),
             'edit'   => Pages\EditCompany::route('/{record}/edit'),
         ];
     }

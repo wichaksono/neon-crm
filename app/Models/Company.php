@@ -31,7 +31,7 @@ class Company extends Model
         'created_by',
     ];
 
-    public function getPerson(): BelongsTo
+    public function person(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'person_id', 'id');
     }
