@@ -19,6 +19,7 @@ class Product extends Model
         'stock_quantity',
         'stock_unit',
         'is_active',
+        'thumbnail',
         'created_by',
     ];
 

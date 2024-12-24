@@ -15,6 +15,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
+use function date;
 use function intval;
 use function str_replace;
 
@@ -58,45 +59,25 @@ class ProductResource extends Resource
                                 ->required()
                                 ->numeric()
                                 ->placeholder('100000000')
-                                ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                ->stripCharacters('.')
                                 ->prefix('Rp')
+                                ->mask(RawJs::make('$money($input)'))
+                                ->stripCharacters(',')
                                 ->helperText('Harga pokok barang.'),
                             Forms\Components\TextInput::make('regular_price')
                                 ->required()
                                 ->numeric()
                                 ->placeholder('100000000')
-                                ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                ->stripCharacters('.')
                                 ->prefix('Rp')
-                                ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                                    if ($get('cost_price')) {
-                                        $normalPrice = intval(str_replace('.', '', $get('cost_price')));
-                                        $salePrice   = intval(str_replace('.', '', $state));
-                                        if ($salePrice >= $normalPrice) {
-                                            $set('regular_price', null);
-                                        }
-                                    }
-                                })
-                                ->reactive()
+                                ->mask(RawJs::make('$money($input)'))
+                                ->stripCharacters(',')
                                 ->helperText('Regular price tidak boleh sama/lebih kecil dari Cost Price.'),
                             Forms\Components\TextInput::make('sale_price')
                                 ->required()
                                 ->numeric()
                                 ->placeholder('100000000')
-                                ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                ->stripCharacters('.')
                                 ->prefix('Rp')
-                                ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                                    if ($get('regular_price')) {
-                                        $normalPrice = intval(str_replace('.', '', $get('regular_price')));
-                                        $salePrice   = intval(str_replace('.', '', $state));
-                                        if ($salePrice >= $normalPrice) {
-                                            $set('sale_price', null);
-                                        }
-                                    }
-                                })
-                                ->reactive()
+                                ->mask(RawJs::make('$money($input)'))
+                                ->stripCharacters(',')
                                 ->helperText('Sale price tidak boleh sama/lebih besar dari Regular Price.'),
                         ])
                         ->columnSpanFull(),
@@ -118,8 +99,10 @@ class ProductResource extends Resource
                 Forms\Components\Section::make('Attributes')
                     ->schema([
                         Forms\Components\FileUpload::make('thumbnail')
+                            ->directory(fn() => 'products/' . date('Y') . '/' . date('m'))
                             ->image()
                             ->imageEditor()
+                            ->disk('public')
                             ->imageEditorAspectRatios([
                                 '16:9',
                                 '4:3',
@@ -136,21 +119,26 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('thumbnail')
+                    ->label('Thumbnail')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('product_code')
+                    ->label('SKU')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Product Name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('cost_price')
-                    ->numeric()
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
-                    ->money()
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('regular_price')
-                    ->numeric()
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sale_price')
-                    ->numeric()
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('stock_quantity')
                     ->numeric()

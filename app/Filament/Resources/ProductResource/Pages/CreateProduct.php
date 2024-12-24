@@ -16,6 +16,12 @@ class CreateProduct extends CreateRecord
 
     protected function mutateFormDataBeforeCreate($data): array
     {
+
+        $data['price'] = $data['regular_price'];
+        if ($data['sale_price'] > 0 && $data['sale_price'] < $data['regular_price']) {
+            $data['price'] = $data['sale_price'];
+        }
+
         $data['created_by'] = auth()->id();
         return $data;
     }

@@ -8,7 +8,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages;
 use Filament\Panel;
@@ -21,7 +20,6 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 use function view;
@@ -64,21 +62,22 @@ class DashboardPanelProvider extends PanelProvider
             ])
             ->navigationItems([
                 NavigationItem::make('Agenda')
-                    ->url('https://filament.pirsch.io', shouldOpenInNewTab: true)
+                    ->url('#', shouldOpenInNewTab: true)
                     ->icon('hugeicons-calendar-02')
                     ->sort(3),
                 NavigationItem::make('Analytics')
-                    ->url('https://filament.pirsch.io', shouldOpenInNewTab: true)
+                    ->url('#', shouldOpenInNewTab: true)
                     ->icon('heroicon-o-presentation-chart-line')
                     ->sort(3),
             ])
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
-                fn () => view('dropdown', [
+                fn() => view('dropdown', [
                     'newOrderUrl' => OrderResource::getUrl('create'),
                     'newCustomerUrl' => CustomerResource::getUrl('create'),
                 ])
             )
+            ->maxContentWidth('8xl')
             ->collapsibleNavigationGroups(false);
     }
 }
