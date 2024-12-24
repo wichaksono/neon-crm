@@ -4,14 +4,19 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
+use App\Models\Common\Constants\ProductConstant;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+use function intval;
+use function str_replace;
 
 class ProductResource extends Resource
 {
@@ -26,39 +31,104 @@ class ProductResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
+            ->columns(3)
             ->schema([
-                Forms\Components\TextInput::make('product_code')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Textarea::make('description')
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('cost_price')
-                    ->numeric()
-                    ->default(null),
-                Forms\Components\TextInput::make('price')
-                    ->required()
-                    ->numeric()
-                    ->prefix('$'),
-                Forms\Components\TextInput::make('regular_price')
-                    ->numeric()
-                    ->default(null),
-                Forms\Components\TextInput::make('sale_price')
-                    ->numeric()
-                    ->default(null),
-                Forms\Components\TextInput::make('stock_quantity')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('stock_unit')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Toggle::make('is_active')
-                    ->required(),
-                Forms\Components\TextInput::make('created_by')
-                    ->numeric()
-                    ->default(null),
+                Forms\Components\Group::make([
+                    Forms\Components\Section::make('Product Information')
+                        ->columns(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Product Name')
+                                ->placeholder('Enter the product name')
+                                ->required()
+                                ->maxLength(255),
+                            Forms\Components\TextInput::make('product_code')
+                                ->label('SKU')
+                                ->placeholder('Enter the product code')
+                                ->required()
+                                ->maxLength(255),
+                            Forms\Components\RichEditor::make('description')
+                                ->columnSpanFull(),
+                        ])
+                        ->columnSpanFull(),
+                    Forms\Components\Section::make('Pricing')
+                        ->columns(3)
+                        ->schema([
+                            Forms\Components\TextInput::make('cost_price')
+                                ->required()
+                                ->numeric()
+                                ->placeholder('100000000')
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                ->stripCharacters('.')
+                                ->prefix('Rp')
+                                ->helperText('Harga pokok barang.'),
+                            Forms\Components\TextInput::make('regular_price')
+                                ->required()
+                                ->numeric()
+                                ->placeholder('100000000')
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                ->stripCharacters('.')
+                                ->prefix('Rp')
+                                ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                    if ($get('cost_price')) {
+                                        $normalPrice = intval(str_replace('.', '', $get('cost_price')));
+                                        $salePrice   = intval(str_replace('.', '', $state));
+                                        if ($salePrice >= $normalPrice) {
+                                            $set('regular_price', null);
+                                        }
+                                    }
+                                })
+                                ->reactive()
+                                ->helperText('Regular price tidak boleh sama/lebih kecil dari Cost Price.'),
+                            Forms\Components\TextInput::make('sale_price')
+                                ->required()
+                                ->numeric()
+                                ->placeholder('100000000')
+                                ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
+                                ->stripCharacters('.')
+                                ->prefix('Rp')
+                                ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                    if ($get('regular_price')) {
+                                        $normalPrice = intval(str_replace('.', '', $get('regular_price')));
+                                        $salePrice   = intval(str_replace('.', '', $state));
+                                        if ($salePrice >= $normalPrice) {
+                                            $set('sale_price', null);
+                                        }
+                                    }
+                                })
+                                ->reactive()
+                                ->helperText('Sale price tidak boleh sama/lebih besar dari Regular Price.'),
+                        ])
+                        ->columnSpanFull(),
+                    Forms\Components\Section::make('Stock')
+                        ->columns(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('stock_quantity')
+                                ->required()
+                                ->default(0)
+                                ->numeric(),
+                            Forms\Components\Select::make('stock_unit')
+                                ->required()
+                                ->searchable()
+                                ->default(ProductConstant::UNIT_PIECE)
+                                ->options(ProductConstant::UNITS),
+                        ])
+                        ->columnSpanFull(),
+                ])->columnSpan(2),
+                Forms\Components\Section::make('Attributes')
+                    ->schema([
+                        Forms\Components\FileUpload::make('thumbnail')
+                            ->image()
+                            ->imageEditor()
+                            ->imageEditorAspectRatios([
+                                '16:9',
+                                '4:3',
+                                '1:1',
+                            ]),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Status')
+                            ->required(),
+                    ])->columnSpan(1),
             ]);
     }
 
@@ -130,9 +200,9 @@ class ProductResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListProducts::route('/'),
+            'index'  => Pages\ListProducts::route('/'),
             'create' => Pages\CreateProduct::route('/create'),
-            'edit' => Pages\EditProduct::route('/{record}/edit'),
+            'edit'   => Pages\EditProduct::route('/{record}/edit'),
         ];
     }
 
