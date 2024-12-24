@@ -21,7 +21,7 @@ class RecurringResource extends Resource
 
     protected static ?string $navigationIcon = 'hugeicons-clock-03';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 150;
 
     public static function form(Form $form): Form
     {

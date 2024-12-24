@@ -30,4 +30,5 @@ class CreateProduct extends CreateRecord
     {
         return Alignment::End;
     }
+
 }

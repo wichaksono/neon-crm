@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Resources\CustomerResource;
 use App\Filament\Resources\OrderResource;
+use Exception;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -26,6 +27,9 @@ use function view;
 
 class DashboardPanelProvider extends PanelProvider
 {
+    /**
+     * @throws Exception
+     */
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -33,6 +37,7 @@ class DashboardPanelProvider extends PanelProvider
             ->id('dashboard')
             ->path('dashboard')
             ->login()
+            ->registration()
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -62,11 +67,11 @@ class DashboardPanelProvider extends PanelProvider
             ])
             ->navigationItems([
                 NavigationItem::make('Agenda')
-                    ->url('#', shouldOpenInNewTab: true)
+                    ->url('#', shouldOpenInNewTab: false)
                     ->icon('hugeicons-calendar-02')
                     ->sort(3),
                 NavigationItem::make('Analytics')
-                    ->url('#', shouldOpenInNewTab: true)
+                    ->url('#', shouldOpenInNewTab: false)
                     ->icon('heroicon-o-presentation-chart-line')
                     ->sort(3),
             ])

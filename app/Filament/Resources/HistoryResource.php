@@ -22,7 +22,7 @@ class HistoryResource extends Resource
 
     protected static ?string $navigationIcon = 'hugeicons-clock-04';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 120;
 
     public static function form(Form $form): Form
     {
