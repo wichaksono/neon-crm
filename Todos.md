@@ -1,10 +1,10 @@
 ## Todos
-- [ ] Customers (CRUD)
-- [ ] Companies (CRUD)
-- [ ] Histories (CRUD)
-- [ ] Invoices (CRUD)
+- [x] Customers (CRUD)
+- [x] Companies (CRUD)
+- [x] Products (CRUD)
 - [ ] Orders (CRUD)
-- [ ] Products (CRUD)
+- [ ] Invoices (CRUD)
+- [ ] Histories (CRUD)
 - [ ] Recurrings (CRUD)
 
 ### Navigation Group

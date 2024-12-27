@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Discount;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Tax;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -107,9 +108,9 @@ class OrderResource extends Resource
                         ->columnSpan(2)
                         ->schema([
                             Forms\Components\Select::make('product_id')
-                                ->label('Product')
+                                ->hiddenLabel()
                                 ->required()
-                                ->options(Product::all()->pluck('name', 'id'))
+                                ->options(Tax::all()->pluck('name', 'id'))
                                 ->columnSpan([
                                     'md' => 5,
                                 ]),
