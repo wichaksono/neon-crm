@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Common\Constants\ProductConstant;
 use App\Models\Product;
 use Filament\Forms;
@@ -16,8 +15,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 use function date;
-use function intval;
-use function str_replace;
 
 class ProductResource extends Resource
 {
@@ -25,7 +22,7 @@ class ProductResource extends Resource
 
     protected static ?string $navigationGroup = 'Products';
 
-    protected static ?string $navigationIcon = 'hugeicons-sale-tag-02';
+    protected static ?string $navigationIcon = 'hugeicons-delivery-box-01';
 
     protected static ?int $navigationSort = 70;
 
