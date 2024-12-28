@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
-use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\Common\Constants\InvoiceConstant;
 use App\Models\Common\Constants\OrderConstant;
 use App\Models\Common\Constants\RecurringConstant;
@@ -42,17 +41,23 @@ class OrderResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make()
-                    ->columns(2)
+                    ->columns(4)
                     ->schema([
-                        Forms\Components\Select::make('customer_id')
+                        Forms\Components\TextInput::make('order_number')
+                            ->default("ORD-" . now()->format('YmdHis'))
+                            ->readOnly()
                             ->required()
-                            ->searchable()
-                            ->options(Customer::all()->pluck('full_name', 'id'))
                             ->columnSpan(1),
                         Forms\Components\DatePicker::make('order_date')
                             ->default(now())
                             ->required()
                             ->columnSpan(1),
+                        Forms\Components\Select::make('customer_id')
+                            ->label('Customer')
+                            ->required()
+                            ->searchable()
+                            ->options(Customer::all()->pluck('full_name', 'id'))
+                            ->columnSpan(2),
                     ]),
                 Forms\Components\Group::make([
                     Forms\Components\Repeater::make('items')
@@ -117,7 +122,7 @@ class OrderResource extends Resource
                                 ->columnSpan([
                                     'md' => 3,
                                 ])
-                                ->readOnly(),
+                                ->disabled(),
                             Forms\Components\TextInput::make('total_price')
                                 ->prefix('Rp')
                                 ->placeholder(0.00)
@@ -125,7 +130,7 @@ class OrderResource extends Resource
                                 ->columnSpan([
                                     'md' => 3,
                                 ])
-                                ->readOnly(),
+                                ->disabled(),
                         ])
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
@@ -174,22 +179,22 @@ class OrderResource extends Resource
                     ->columns(2)
                     ->schema([
                         Forms\Components\TextInput::make('total_amount')
-                            ->readOnly()
+                            ->disabled()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('discount_amount')
-                            ->readOnly()
+                            ->disabled()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('tax_amount')
-                            ->readOnly()
+                            ->disabled()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('grand_amount')
-                            ->readOnly()
+                            ->disabled()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00)
@@ -349,10 +354,21 @@ class OrderResource extends Resource
             return $subtotal + ($prices[$product['product_id']] * $product['quantity']);
         }, 0);
 
+        $discounts = collect($get('discounts'))->filter(fn($discount) => !empty($discount['discount_id']));
+        $discount  = $discounts->reduce(function ($discount, $item) {
+            return $discount + $item['discount_id'];
+        }, 0);
+
+        $taxes = collect($get('taxes'))->filter(fn($tax) => !empty($tax['tax_id']));
+        $tax    = $taxes->reduce(function ($tax, $item) {
+            return $tax + $item['tax_id'];
+        }, 0);
+
+        $grandAmount = $subtotal - $discount + $tax;
         // Update the state with the new values
         $set('total_amount', Number::format($subtotal, locale: 'id'));
-        $set('discount_amount', Number::format($subtotal, locale: 'id'));
-        $set('tax_amount', Number::format($subtotal, locale: 'id'));
-        $set('grand_amount', Number::format($subtotal, locale: 'id'));
+        $set('discount_amount', Number::format($discount, locale: 'id'));
+        $set('tax_amount', Number::format($tax, locale: 'id'));
+        $set('grand_amount', Number::format($grandAmount, locale: 'id'));
     }
 }
