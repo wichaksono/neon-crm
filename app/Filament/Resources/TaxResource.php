@@ -3,11 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TaxResource\Pages;
-use App\Filament\Resources\TaxResource\RelationManagers;
 use App\Models\Tax;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,14 +37,21 @@ class TaxResource extends Resource
                         Forms\Components\Select::make('type')
                             ->options([
                                 'percentage' => 'Percentage',
-                                'fixed' => 'Fixed',
+                                'fixed'      => 'Fixed',
                             ])
+                            ->live()
                             ->default('percentage')
                             ->required(),
                         Forms\Components\TextInput::make('rate')
-                            ->extraInputAttributes(['class' => 'text-end'])
                             ->required()
                             ->default(0)
+                            ->prefix(fn($get) => $get('type') === 'fixed' ? 'Rp' : null)
+                            ->suffix(fn($get) => $get('type') === 'percentage' ? '%' : null)
+                            ->numeric()
+                            ->mask(RawJs::make('$money($input)'))
+                            ->stripCharacters(',')
+                            ->live()
+                            ->extraInputAttributes(['class' => 'text-end'])
                             ->numeric(),
                         Forms\Components\Select::make('status')
                             ->options([
@@ -69,7 +77,8 @@ class TaxResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('created_by')
-                    ->numeric()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->formatStateUsing(fn($state) => $state ? User::find($state)->name : 'Undefined')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
@@ -85,14 +94,19 @@ class TaxResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                ])->iconButton(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
     }
@@ -111,5 +125,13 @@ class TaxResource extends Resource
             'create' => Pages\CreateTax::route('/create'),
             'edit' => Pages\EditTax::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 }
