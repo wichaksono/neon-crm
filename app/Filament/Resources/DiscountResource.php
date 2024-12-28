@@ -3,8 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DiscountResource\Pages;
-use App\Models\Common\Constants\CustomerConstant;
 use App\Models\Discount;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -85,15 +85,27 @@ class DiscountResource extends Resource
                 Tables\Columns\TextColumn::make('value')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('status'),
+                Tables\Columns\TextColumn::make('status')
+                    ->formatStateUsing(fn($state) => $state === 'active' ? 'Active' : 'Inactive')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'active' => 'success',
+                        'inactive' => 'gray',
+                    })
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('start_date')
-                    ->default('Unlimited')
+                    ->default('Timeless')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_date')
-                    ->default('Unlimited')
+                    ->default('Timeless')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_by')
-                    ->numeric()
+                    ->formatStateUsing(function ($state) {
+                        if ($state) {
+                            return User::find($state)->name;
+                        }
+                        return '';
+                    })
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deleted_at')
@@ -115,7 +127,7 @@ class DiscountResource extends Resource
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\DeleteAction::make()->requiresConfirmation(),
                 ])->iconButton()
             ])
             ->bulkActions([
