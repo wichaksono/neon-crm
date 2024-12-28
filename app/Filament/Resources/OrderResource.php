@@ -6,6 +6,7 @@ use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\Common\Constants\InvoiceConstant;
 use App\Models\Common\Constants\OrderConstant;
+use App\Models\Common\Constants\RecurringConstant;
 use App\Models\Customer;
 use App\Models\Discount;
 use App\Models\Order;
@@ -18,7 +19,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Number;
 
+use function collect;
+use function dd;
 use function now;
 
 class OrderResource extends Resource
@@ -31,6 +35,8 @@ class OrderResource extends Resource
 
     protected static ?int $navigationSort = 45;
 
+    private array $products = [];
+
     public static function form(Form $form): Form
     {
         return $form
@@ -40,6 +46,7 @@ class OrderResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('customer_id')
                             ->required()
+                            ->searchable()
                             ->options(Customer::all()->pluck('full_name', 'id'))
                             ->columnSpan(1),
                         Forms\Components\DatePicker::make('order_date')
@@ -49,16 +56,40 @@ class OrderResource extends Resource
                     ]),
                 Forms\Components\Group::make([
                     Forms\Components\Repeater::make('items')
-                        ->columnSpan(6)
+                        ->columnSpan([
+                            'md'  => 10,
+                            '2xl' => 6
+                        ])
                         ->columns(12)
                         ->schema([
-                            Forms\Components\Select::make('product_id')
-                                ->label('Product')
-                                ->required()
-                                ->options(Product::all()->pluck('name', 'id'))
-                                ->columnSpan([
-                                    'md' => 5,
-                                ]),
+                            Forms\Components\Group::make([
+                                Forms\Components\Select::make('product_id')
+                                    ->label('Product')
+                                    ->required()
+                                    ->live()
+                                    ->searchable()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $product = Product::find($state);
+                                        if ($product) {
+                                            $quantity  = $get('quantity') ?? 1;
+                                            $unitPrice = Number::format($product->price, locale: 'id') ?? null;
+                                            $set('unit_price', $unitPrice);
+
+                                            $totalPrice = Number::format($product->price * $quantity, locale: 'id')
+                                                ??
+                                                null;
+                                            $set('total_price', $totalPrice);
+                                        }
+                                    })
+                                    ->options(Product::all()->pluck('name', 'id')),
+                                Forms\Components\TextInput::make('custom_label')
+                                    ->hiddenLabel()
+                                    ->placeholder('Custom Label')
+                                    ->columnSpanFull(),
+                            ])->columnSpan([
+                                'md' => 5,
+                            ]),
+
                             Forms\Components\TextInput::make('quantity')
                                 ->required()
                                 ->numeric()
@@ -66,7 +97,18 @@ class OrderResource extends Resource
                                     'md' => 1,
                                 ])
                                 ->extraInputAttributes(['class' => 'text-center'])
-                                ->default(1),
+                                ->minValue(1)
+                                ->default(1)
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $productId = $get('product_id');
+                                    if ($productId) {
+                                        $price    = Product::find($productId)->price;
+                                        $quantity = $state;
+                                        $set('total_price', Number::format($price * $quantity, locale: 'id'));
+                                    }
+                                })
+                                ->live()
+                                ->integer(),
                             Forms\Components\TextInput::make('unit_price')
                                 ->prefix('Rp')
                                 ->placeholder('0.00')
@@ -76,23 +118,21 @@ class OrderResource extends Resource
                                 ])
                                 ->readOnly(),
                             Forms\Components\TextInput::make('total_price')
-                                ->readOnly()
-                                ->numeric()
                                 ->prefix('Rp')
+                                ->placeholder(0.00)
                                 ->extraInputAttributes(['class' => 'text-right'])
                                 ->columnSpan([
                                     'md' => 3,
                                 ])
-                                ->placeholder(0.00),
-                            Forms\Components\TextInput::make('custom_label')
-                                ->hiddenLabel()
-                                ->placeholder('Custom Label')
-                                ->columnSpanFull(),
+                                ->readOnly(),
                         ])
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
                     Forms\Components\Repeater::make('discounts')
-                        ->columnSpan(2)
+                        ->columnSpan([
+                            '2xl' => 2,
+                            'md'  => 5
+                        ])
                         ->schema([
                             Forms\Components\Select::make('discount_id')
                                 ->hiddenLabel()
@@ -105,7 +145,10 @@ class OrderResource extends Resource
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
                     Forms\Components\Repeater::make('taxes')
-                        ->columnSpan(2)
+                        ->columnSpan([
+                            '2xl' => 2,
+                            'md'  => 5
+                        ])
                         ->schema([
                             Forms\Components\Select::make('product_id')
                                 ->hiddenLabel()
@@ -118,6 +161,11 @@ class OrderResource extends Resource
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
                 ])
+                    ->live()
+                    // After adding a new row, we need to update the totals
+                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                        self::updateTotals($get, $set);
+                    })
                     ->columns(10)
                     ->columnSpanFull(),
 
@@ -125,25 +173,21 @@ class OrderResource extends Resource
                     ->columns(2)
                     ->schema([
                         Forms\Components\TextInput::make('total_amount')
-                            ->numeric()
                             ->readOnly()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('discount_amount')
-                            ->numeric()
                             ->readOnly()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('tax_amount')
-                            ->numeric()
                             ->readOnly()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('grand_amount')
-                            ->numeric()
                             ->readOnly()
                             ->prefix('Rp')
                             ->extraInputAttributes(['class' => 'text-right'])
@@ -157,9 +201,37 @@ class OrderResource extends Resource
                             ->required()
                             ->options(OrderConstant::STATUSES)
                             ->default(OrderConstant::STATUS_PENDING),
+                        Forms\Components\Select::make('payment_type')
+                            ->required()
+                            ->searchable()
+                            ->options(InvoiceConstant::PAYMENT_TYPES),
+
                         Forms\Components\Select::make('payment_method')
-                            ->options(InvoiceConstant::PAYMENT_METHODS)
-                            ->default(InvoiceConstant::PAYMENT_STATUS_DRAFT),
+                            ->required()
+                            ->searchable()
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn (Forms\Set $set) => $set('payment_method_name', null))
+                            ->options(InvoiceConstant::PAYMENT_METHODS),
+
+                        Forms\Components\Select::make('payment_method_name')
+                            ->required()
+                            ->searchable()
+                            ->options(function (Forms\Get $get):array {
+                                return match ($get('payment_method')) {
+                                    InvoiceConstant::PAYMENT_METHOD_BANK_TRANSFER,
+                                    InvoiceConstant::PAYMENT_METHOD_DIRECT_DEBIT,
+                                    InvoiceConstant::PAYMENT_METHOD_VIRTUAL_ACCOUNT => InvoiceConstant::PAYMENT_BANKS,
+                                    InvoiceConstant::PAYMENT_METHOD_CREDIT_CARD => InvoiceConstant::CREDIT_CARDS,
+                                    InvoiceConstant::PAYMENT_METHOD_E_WALLET => InvoiceConstant::E_WALLETS,
+                                    InvoiceConstant::PAYMENT_METHOD_RETAIL => InvoiceConstant::RETAILS,
+                                    default => [],
+                                };
+                            }),
+
+                        Forms\Components\Select::make('recurring')
+                            ->searchable()
+                            ->options(RecurringConstant::RECURRING_TYPES)
+                            ->default(RecurringConstant::RECURRING_TYPE_ONCE),
                     ])->columnSpan(1),
 
                 Forms\Components\Section::make('Attachments')
@@ -172,6 +244,7 @@ class OrderResource extends Resource
                     ->description('Add notes for the order.')
                     ->schema([
                         Forms\Components\Textarea::make('notes')
+                            ->rows(10)
                             ->hiddenLabel(),
                     ])->columnSpan(1),
             ]);
@@ -248,9 +321,9 @@ class OrderResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListOrders::route('/'),
+            'index'  => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
-            'edit' => Pages\EditOrder::route('/{record}/edit'),
+            'edit'   => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 
@@ -260,5 +333,25 @@ class OrderResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function updateTotals(Forms\Get $get, Forms\Set $set): void
+    {
+        // Retrieve all selected products and remove empty rows
+        $selectedProducts = collect($get('items'))->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
+
+        // Retrieve prices for all selected products
+        $prices = Product::find($selectedProducts->pluck('product_id'))->pluck('price', 'id');
+
+        // Calculate subtotal based on the selected products and quantities
+        $subtotal = $selectedProducts->reduce(function ($subtotal, $product) use ($prices) {
+            return $subtotal + ($prices[$product['product_id']] * $product['quantity']);
+        }, 0);
+
+        // Update the state with the new values
+        $set('total_amount', Number::format($subtotal, locale: 'id'));
+        $set('discount_amount', Number::format($subtotal, locale: 'id'));
+        $set('tax_amount', Number::format($subtotal, locale: 'id'));
+        $set('grand_amount', Number::format($subtotal, locale: 'id'));
     }
 }
