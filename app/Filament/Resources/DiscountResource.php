@@ -3,12 +3,16 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DiscountResource\Pages;
+use App\Models\Common\Constants\CustomerConstant;
 use App\Models\Discount;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class DiscountResource extends Resource
 {
@@ -34,22 +38,29 @@ class DiscountResource extends Resource
                             Forms\Components\Select::make('type')
                                 ->options([
                                     'percentage' => 'Percentage',
-                                    'fixed' => 'Fixed',
+                                    'fixed'      => 'Fixed',
                                 ])
+                                ->live()
                                 ->default('percentage')
                                 ->required()->columnSpan(1),
                             Forms\Components\TextInput::make('value')
                                 ->required()
                                 ->default(0)
+                                ->prefix(fn($get) => $get('type') === 'fixed' ? 'Rp' : null)
+                                ->suffix(fn($get) => $get('type') === 'percentage' ? '%' : null)
+                                ->numeric()
+                                ->mask(RawJs::make('$money($input)'))
+                                ->stripCharacters(',')
+                                ->live()
                                 ->extraInputAttributes(['class' => 'text-end'])
                                 ->numeric()->columnSpan(2),
                         ])
-                        ->columns(3),
+                            ->columns(3),
 
                         Forms\Components\Group::make([
                             Forms\Components\Select::make('status')
                                 ->options([
-                                    'active' => 'Active',
+                                    'active'   => 'Active',
                                     'inactive' => 'Inactive',
                                 ])
                                 ->default('active')
@@ -76,13 +87,14 @@ class DiscountResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('start_date')
-                    ->dateTime()
+                    ->default('Unlimited')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_date')
-                    ->dateTime()
+                    ->default('Unlimited')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_by')
                     ->numeric()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
@@ -98,14 +110,19 @@ class DiscountResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ])->iconButton()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
     }
@@ -124,5 +141,13 @@ class DiscountResource extends Resource
             'create' => Pages\CreateDiscount::route('/create'),
             'edit'   => Pages\EditDiscount::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 }
