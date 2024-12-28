@@ -56,6 +56,7 @@ class OrderResource extends Resource
                     ]),
                 Forms\Components\Group::make([
                     Forms\Components\Repeater::make('items')
+                        ->label('Order Items')
                         ->columnSpan([
                             'md'  => 10,
                             '2xl' => 6
@@ -169,7 +170,7 @@ class OrderResource extends Resource
                     ->columns(10)
                     ->columnSpanFull(),
 
-                Forms\Components\Section::make('Summary')
+                Forms\Components\Section::make('Calculated Totals')
                     ->columns(2)
                     ->schema([
                         Forms\Components\TextInput::make('total_amount')
