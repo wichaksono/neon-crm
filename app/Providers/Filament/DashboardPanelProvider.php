@@ -63,16 +63,6 @@ class DashboardPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->navigationItems([
-                NavigationItem::make('Agenda')
-                    ->url('#', shouldOpenInNewTab: false)
-                    ->icon('hugeicons-calendar-02')
-                    ->sort(3),
-                NavigationItem::make('Analytics')
-                    ->url('#', shouldOpenInNewTab: false)
-                    ->icon('heroicon-o-presentation-chart-line')
-                    ->sort(3),
-            ])
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
                 fn() => view('dropdown', [
