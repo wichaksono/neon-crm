@@ -29,11 +29,13 @@ class Todos extends KanbanBoard
 
     protected static string $statusEnum = TodoStatus::class;
 
+    protected static ?string $title = 'MyTodos';
+
     protected static string $recordTitleAttribute = 'title';
 
     protected static string $recordStatusAttribute = 'status';
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationIcon = 'hugeicons-user-check-01';
 
     protected bool $editModalSlideOver = true;
 
