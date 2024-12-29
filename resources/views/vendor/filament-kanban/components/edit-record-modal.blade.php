@@ -9,13 +9,14 @@
         {{ $this->form }}
 
         <x-slot name="footer">
-            <x-filament::button type="submit">
-                {{$this->getEditModalSaveButtonLabel()}}
-            </x-filament::button>
-
-            <x-filament::button color="gray" x-on:click="isOpen = false">
-                {{$this->getEditModalCancelButtonLabel()}}
-            </x-filament::button>
+           <div class="text-end">
+               <x-filament::button color="gray" x-on:click="isOpen = false">
+                   {{$this->getEditModalCancelButtonLabel()}}
+               </x-filament::button>
+               <x-filament::button type="submit">
+                   {{$this->getEditModalSaveButtonLabel()}}
+               </x-filament::button>
+           </div>
         </x-slot>
     </x-filament::modal>
 </x-filament-panels::form>

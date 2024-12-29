@@ -11,6 +11,7 @@ use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Support\Enums\Alignment;
 use Illuminate\Database\Eloquent\Builder;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
@@ -33,6 +34,8 @@ class Todos extends KanbanBoard
     protected static string $recordStatusAttribute = 'status';
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
+    protected bool $editModalSlideOver = true;
 
     public function onStatusChanged(int $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
     {
@@ -71,6 +74,7 @@ class Todos extends KanbanBoard
                 ->model(Todo::class)
                 ->createAnother(false)
                 ->modalHeading('Create Todo')
+                ->modalFooterActionsAlignment(Alignment::End)
                 ->icon('heroicon-o-plus')
                 ->label('Create Todo')
                 ->form([
