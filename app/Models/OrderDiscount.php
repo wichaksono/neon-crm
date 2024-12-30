@@ -3,24 +3,41 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderDiscount extends Model
 {
     public $timestamps = false;
     public $incrementing = false;
 
+    protected $primaryKey = ['order_id', 'discount_id'];  // Add composite key
+
     protected $fillable = [
         'order_id',
         'discount_id',
     ];
 
+    // Add relationships
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function discount(): BelongsTo
+    {
+        return $this->belongsTo(Discount::class);
+    }
+
     public static function addDiscounts(int $orderId, array $discounts): void
     {
-        DB::table('order_discounts')->insert(array_map(function ($discount) use ($orderId) {
+        if (empty($discounts)) {
+            return;
+        }
+
+        self::insert(array_map(function ($discount) use ($orderId) {
             return [
                 'order_id'    => $orderId,
-                'discount_id' => $discount['id'],
+                'discount_id' => $discount['discount_id'],
             ];
         }, $discounts));
     }
@@ -33,6 +50,6 @@ class OrderDiscount extends Model
 
     public static function deleteDiscounts(int $orderId): void
     {
-        DB::table('order_discounts')->where('order_id', $orderId)->delete();
+        self::where('order_id', $orderId)->delete();
     }
 }

@@ -3,9 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
+use App\Models\Common\Constants\DiscountConstant;
 use App\Models\Common\Constants\InvoiceConstant;
 use App\Models\Common\Constants\OrderConstant;
 use App\Models\Common\Constants\RecurringConstant;
+use App\Models\Common\Constants\TaxConstant;
 use App\Models\Customer;
 use App\Models\Discount;
 use App\Models\Order;
@@ -21,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Number;
 
 use function collect;
-use function dd;
+use function is_array;
 use function now;
 
 class OrderResource extends Resource
@@ -33,8 +35,6 @@ class OrderResource extends Resource
     protected static ?string $navigationIcon = 'hugeicons-shopping-cart-add-01';
 
     protected static ?int $navigationSort = 45;
-
-    private array $products = [];
 
     public static function form(Form $form): Form
     {
@@ -60,7 +60,8 @@ class OrderResource extends Resource
                             ->columnSpan(2),
                     ]),
                 Forms\Components\Group::make([
-                    Forms\Components\Repeater::make('items')
+                    Forms\Components\Repeater::make('orderItems')
+//                        ->relationship()
                         ->label('Order Items')
                         ->columnSpan([
                             'md'  => 10,
@@ -75,15 +76,17 @@ class OrderResource extends Resource
                                     ->live()
                                     ->searchable()
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        if ( ! $state || is_array($state)) {
+                                            return;
+                                        }
+
                                         $product = Product::find($state);
                                         if ($product) {
                                             $quantity  = $get('quantity') ?? 1;
-                                            $unitPrice = Number::format($product->price, locale: 'id') ?? null;
+                                            $unitPrice = Number::format($product->price, locale: 'id');
                                             $set('unit_price', $unitPrice);
 
-                                            $totalPrice = Number::format($product->price * $quantity, locale: 'id')
-                                                ??
-                                                null;
+                                            $totalPrice = Number::format($product->price * $quantity, locale: 'id');
                                             $set('total_price', $totalPrice);
                                         }
                                     })
@@ -106,11 +109,16 @@ class OrderResource extends Resource
                                 ->minValue(1)
                                 ->default(1)
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    if ( ! $state || is_array($state)) {
+                                        return;
+                                    }
+
                                     $productId = $get('product_id');
                                     if ($productId) {
-                                        $price    = Product::find($productId)->price;
-                                        $quantity = $state;
-                                        $set('total_price', Number::format($price * $quantity, locale: 'id'));
+                                        $price      = Product::find($productId)->price;
+                                        $quantity   = $state;
+                                        $totalPrice = Number::format($price * $quantity, locale: 'id');
+                                        $set('total_price', $totalPrice);
                                     }
                                 })
                                 ->live()
@@ -118,6 +126,7 @@ class OrderResource extends Resource
                             Forms\Components\TextInput::make('unit_price')
                                 ->prefix('Rp')
                                 ->placeholder('0.00')
+                                ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                                 ->extraInputAttributes(['class' => 'text-right'])
                                 ->columnSpan([
                                     'md' => 3,
@@ -126,6 +135,7 @@ class OrderResource extends Resource
                             Forms\Components\TextInput::make('total_price')
                                 ->prefix('Rp')
                                 ->placeholder(0.00)
+                                ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                                 ->extraInputAttributes(['class' => 'text-right'])
                                 ->columnSpan([
                                     'md' => 3,
@@ -134,7 +144,10 @@ class OrderResource extends Resource
                         ])
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
+
+                    // Discounts
                     Forms\Components\Repeater::make('discounts')
+//                        ->relationship()
                         ->columnSpan([
                             '2xl' => 2,
                             'md'  => 5
@@ -142,7 +155,6 @@ class OrderResource extends Resource
                         ->schema([
                             Forms\Components\Select::make('discount_id')
                                 ->hiddenLabel()
-                                ->required()
                                 ->options(Discount::all()->pluck('name', 'id'))
                                 ->columnSpan([
                                     'md' => 5,
@@ -150,15 +162,17 @@ class OrderResource extends Resource
                         ])
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
+
+                    // Taxes
                     Forms\Components\Repeater::make('taxes')
+//                        ->relationship()
                         ->columnSpan([
                             '2xl' => 2,
                             'md'  => 5
                         ])
                         ->schema([
-                            Forms\Components\Select::make('product_id')
+                            Forms\Components\Select::make('tax_id')
                                 ->hiddenLabel()
-                                ->required()
                                 ->options(Tax::all()->pluck('name', 'id'))
                                 ->columnSpan([
                                     'md' => 5,
@@ -181,21 +195,25 @@ class OrderResource extends Resource
                         Forms\Components\TextInput::make('total_amount')
                             ->disabled()
                             ->prefix('Rp')
+                            ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('discount_amount')
                             ->disabled()
                             ->prefix('Rp')
+                            ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('tax_amount')
                             ->disabled()
                             ->prefix('Rp')
+                            ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00),
                         Forms\Components\TextInput::make('grand_amount')
                             ->disabled()
                             ->prefix('Rp')
+                            ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                             ->extraInputAttributes(['class' => 'text-right'])
                             ->placeholder(0.00)
                     ])->columnSpan(1),
@@ -205,24 +223,26 @@ class OrderResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('payment_status')
                             ->required()
-                            ->options(OrderConstant::STATUSES)
-                            ->default(OrderConstant::STATUS_PENDING),
+                            ->options(InvoiceConstant::PAYMENT_STATUSES)
+                            ->default(InvoiceConstant::PAYMENT_STATUS_UNPAID),
                         Forms\Components\Select::make('payment_type')
                             ->required()
                             ->searchable()
+                            ->default(InvoiceConstant::PAYMENT_TYPE_CASH)
                             ->options(InvoiceConstant::PAYMENT_TYPES),
 
                         Forms\Components\Select::make('payment_method')
                             ->required()
                             ->searchable()
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Forms\Set $set) => $set('payment_method_name', null))
+                            ->afterStateUpdated(fn(Forms\Set $set) => $set('payment_method_name', null))
+                            ->default(InvoiceConstant::PAYMENT_METHOD_BANK_TRANSFER)
                             ->options(InvoiceConstant::PAYMENT_METHODS),
 
                         Forms\Components\Select::make('payment_method_name')
                             ->required()
                             ->searchable()
-                            ->options(function (Forms\Get $get):array {
+                            ->options(function (Forms\Get $get): array {
                                 return match ($get('payment_method')) {
                                     InvoiceConstant::PAYMENT_METHOD_BANK_TRANSFER,
                                     InvoiceConstant::PAYMENT_METHOD_DIRECT_DEBIT,
@@ -262,31 +282,45 @@ class OrderResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('order_number')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('customer_id')
+                Tables\Columns\TextColumn::make('customer.full_name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => OrderConstant::STATUSES[$state] ?? $state)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('order_date')
                     ->date()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
-                    ->numeric()
+                    ->label('Total')
+                    ->money('IDR', locale: 'id')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('discount_amount')
-                    ->numeric()
+                    ->label('Discount')
+                    ->money('IDR', locale: 'id')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('tax_amount')
-                    ->numeric()
+                    ->label('Tax')
+                    ->money('IDR', locale: 'id')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('grand_amount')
-                    ->numeric()
+                    ->label('Grand Total')
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('payment_status')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => OrderConstant::STATUSES[$state] ?? $state)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('payment_method')
+                    ->formatStateUsing(fn($state) => InvoiceConstant::PAYMENT_METHODS[$state] ?? $state)
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_by')
+                Tables\Columns\TextColumn::make('createdBy.name')
+                    ->label('Created By')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -306,7 +340,11 @@ class OrderResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ])->iconButton(),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -320,7 +358,6 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
         ];
     }
 
@@ -344,7 +381,9 @@ class OrderResource extends Resource
     public static function updateTotals(Forms\Get $get, Forms\Set $set): void
     {
         // Retrieve all selected products and remove empty rows
-        $selectedProducts = collect($get('items'))->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
+        $selectedProducts = collect($get('orderItems'))
+            ->values() // Mengatur ulang key menjadi numerik
+            ->filter(fn($item) => ! empty($item['product_id']) && ! empty($item['quantity']));
 
         // Retrieve prices for all selected products
         $prices = Product::find($selectedProducts->pluck('product_id'))->pluck('price', 'id');
@@ -354,14 +393,30 @@ class OrderResource extends Resource
             return $subtotal + ($prices[$product['product_id']] * $product['quantity']);
         }, 0);
 
-        $discounts = collect($get('discounts'))->filter(fn($discount) => !empty($discount['discount_id']));
-        $discount  = $discounts->reduce(function ($discount, $item) {
-            return $discount + $item['discount_id'];
+        $discounts = collect($get('discounts'))->filter(fn($discount) => ! empty($discount['discount_id']));
+        $discount  = $discounts->reduce(function ($discount, $item) use ($subtotal) {
+            $discountItem = Discount::find($item['discount_id']);
+
+            if ($discountItem->type === DiscountConstant::TYPE_PERCENTAGE) {
+                return $discount + ($subtotal * $discountItem->value / 100);
+            }
+
+            return $discount + $discountItem->value;
         }, 0);
 
-        $taxes = collect($get('taxes'))->filter(fn($tax) => !empty($tax['tax_id']));
-        $tax    = $taxes->reduce(function ($tax, $item) {
-            return $tax + $item['tax_id'];
+        $taxes = collect($get('taxes'))->filter(fn($tax) => ! empty($tax['tax_id']));
+        $tax   = $taxes->reduce(function ($tax, $item) use ($subtotal, $discount) {
+            $taxItem = Tax::find($item['tax_id']);
+
+            if ($taxItem->type === TaxConstant::TYPE_PERCENTAGE) {
+                if ($subtotal - $discount <= 0) {
+                    return $tax + ($subtotal * $taxItem->rate / 100);
+                }
+
+                return $tax + (($subtotal - $discount) * $taxItem->rate / 100);
+            }
+
+            return $tax + $taxItem->rate;
         }, 0);
 
         $grandAmount = $subtotal - $discount + $tax;

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Common\Traits\CreatedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CreatedByTrait;
 
     protected $fillable = [
         'order_number',
@@ -45,10 +46,5 @@ class Order extends Model
     public function taxes(): HasMany
     {
         return $this->hasMany(OrderTax::class, 'order_id', 'id');
-    }
-
-    public function createdBy(): HasOne
-    {
-        return $this->hasOne(User::class, 'id', 'created_by');
     }
 }
