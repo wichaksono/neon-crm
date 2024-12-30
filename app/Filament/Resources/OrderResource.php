@@ -61,7 +61,6 @@ class OrderResource extends Resource
                     ]),
                 Forms\Components\Group::make([
                     Forms\Components\Repeater::make('orderItems')
-//                        ->relationship()
                         ->label('Order Items')
                         ->columnSpan([
                             'md'  => 10,
@@ -147,7 +146,6 @@ class OrderResource extends Resource
 
                     // Discounts
                     Forms\Components\Repeater::make('discounts')
-//                        ->relationship()
                         ->columnSpan([
                             '2xl' => 2,
                             'md'  => 5
@@ -165,7 +163,6 @@ class OrderResource extends Resource
 
                     // Taxes
                     Forms\Components\Repeater::make('taxes')
-//                        ->relationship()
                         ->columnSpan([
                             '2xl' => 2,
                             'md'  => 5
@@ -286,6 +283,7 @@ class OrderResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Order Status')
                     ->badge()
                     ->formatStateUsing(fn($state) => OrderConstant::STATUSES[$state] ?? $state)
                     ->searchable(),
@@ -295,17 +293,17 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
                     ->money('IDR', locale: 'id')
-                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->toggleable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('discount_amount')
                     ->label('Discount')
                     ->money('IDR', locale: 'id')
-                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->toggleable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('tax_amount')
                     ->label('Tax')
                     ->money('IDR', locale: 'id')
-                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->toggleable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('grand_amount')
                     ->label('Grand Total')
@@ -322,7 +320,8 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('createdBy.name')
                     ->label('Created By')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
