@@ -34,23 +34,11 @@ class TaxResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255),
-                        Forms\Components\Select::make('type')
-                            ->options([
-                                'percentage' => 'Percentage',
-                                'fixed'      => 'Fixed',
-                            ])
-                            ->live()
-                            ->default('percentage')
-                            ->required(),
                         Forms\Components\TextInput::make('rate')
                             ->required()
                             ->default(0)
-                            ->prefix(fn($get) => $get('type') === 'fixed' ? 'Rp' : null)
-                            ->suffix(fn($get) => $get('type') === 'percentage' ? '%' : null)
+                            ->suffix('%')
                             ->numeric()
-                            ->mask(RawJs::make('$money($input)'))
-                            ->stripCharacters(',')
-                            ->live()
                             ->extraInputAttributes(['class' => 'text-end'])
                             ->numeric(),
                         Forms\Components\Select::make('status')
@@ -70,9 +58,9 @@ class TaxResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('type'),
-                Tables\Columns\TextColumn::make('rate')
+                Tables\Columns\TextColumn::make('type')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status'),

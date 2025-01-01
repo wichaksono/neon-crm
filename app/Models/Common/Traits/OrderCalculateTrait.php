@@ -77,17 +77,11 @@ trait OrderCalculateTrait
                 if ( ! empty($taxItem['tax_id'])) {
                     $tax = Tax::find($taxItem['tax_id']);
 
-                    if ($tax->type === TaxConstant::TYPE_PERCENTAGE) {
-
-                        if ($this->totalAmount - $this->totalDiscountAmount <= 0) {
-                            $taxAmount = $this->totalAmount * $tax->value / 100;
-                        } else {
-                            $taxAmount = ($this->totalAmount - $this->totalDiscountAmount) * $tax->rate / 100;
-                        }
+                    if ($this->totalAmount - $this->totalDiscountAmount <= 0) {
+                        $taxAmount = $this->totalAmount * $tax->value / 100;
                     } else {
-                        $taxAmount = $tax->rate;
+                        $taxAmount = ($this->totalAmount - $this->totalDiscountAmount) * $tax->rate / 100;
                     }
-
 
                     $this->totalTaxAmount += $taxAmount;
 
