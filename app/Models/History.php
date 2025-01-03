@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Common\Traits\CreatedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class History extends Model
 {
+
+    use CreatedByTrait;
 
     protected $fillable = [
         'historical_id',

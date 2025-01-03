@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Common\Traits\CreatedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Tax extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CreatedByTrait;
 
     protected $fillable = [
         'name',

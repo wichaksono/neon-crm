@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Common\Traits\CreatedByTrait;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Todo extends Model
 {
+    use CreatedByTrait;
+
     protected $fillable = [
         'title',
         'description',

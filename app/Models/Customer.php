@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Common\Traits\CreatedByTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CreatedByTrait;
 
     protected $fillable = [
         'full_name',
