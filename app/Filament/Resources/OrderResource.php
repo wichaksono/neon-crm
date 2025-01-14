@@ -15,6 +15,8 @@ use App\Models\Product;
 use App\Models\Tax;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -339,6 +341,8 @@ class OrderResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make()
+                    ->slideOver(),
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
@@ -351,6 +355,100 @@ class OrderResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Invoice Details')
+                    ->columns(4)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('order_number')
+                            ->label('Invoice Number'),
+                        Infolists\Components\TextEntry::make('id')
+                            ->label('Order ID'),
+                        Infolists\Components\TextEntry::make('customer.full_name')
+                            ->label('Customer ID'),
+                        Infolists\Components\TextEntry::make('issue_date')
+                            ->date(),
+                        Infolists\Components\TextEntry::make('due_date')
+                            ->date(),
+                        Infolists\Components\TextEntry::make('status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'paid' => 'success',
+                                'pending' => 'warning',
+                                'unpaid' => 'danger',
+                                default => 'gray',
+                            }),
+                    ]),
+
+                Infolists\Components\RepeatableEntry::make('orderItems')
+                    ->columns(3)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('product.name')
+                            ->formatStateUsing(function ($state, $record) {
+                                return $state . ' (x' . $record->quantity . ')';
+                            })
+                            ->label('Product'),
+                        Infolists\Components\TextEntry::make('unit_price')
+                            ->money('IDR', locale: 'id')
+                            ->label('Unit Price'),
+                        Infolists\Components\TextEntry::make('total_price')
+                            ->label('Subtotal')
+                            ->money('IDR', locale: 'id'),
+                    ])
+                    ->columnSpanFull(),
+
+
+                Infolists\Components\Section::make('Financial Details')
+                    ->columns(4)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('total_amount')
+                            ->label('Subtotal')
+                            ->money('IDR', locale: 'id'),
+                        Infolists\Components\TextEntry::make('discount_amount')
+                            ->label('Discount')
+                            ->money('IDR', locale: 'id'),
+                        Infolists\Components\TextEntry::make('tax_amount')
+                            ->label('Tax')
+                            ->money('IDR', locale: 'id'),
+                        Infolists\Components\TextEntry::make('grand_amount')
+                            ->label('Total')
+                            ->money('IDR', locale: 'id')
+                            ->weight('bold'),
+                    ]),
+
+                Infolists\Components\Section::make('Payment Information')
+                    ->columns(2)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('payment_status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'paid' => 'success',
+                                'pending' => 'warning',
+                                'unpaid' => 'danger',
+                                default => 'gray',
+                            }),
+                        Infolists\Components\TextEntry::make('payment_date')
+                            ->date(),
+                    ]),
+
+                Infolists\Components\Section::make('Additional Information')
+                    ->columns(3)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('createdBy.name')
+                            ->label('Created By'),
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->dateTime(),
+                        Infolists\Components\TextEntry::make('updated_at')
+                            ->dateTime(),
+                        Infolists\Components\TextEntry::make('notes')
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -419,6 +517,7 @@ class OrderResource extends Resource
         }, 0);
 
         $grandAmount = $subtotal - $discount + $tax;
+
         // Update the state with the new values
         $set('total_amount', Number::format($subtotal, locale: 'id'));
         $set('discount_amount', Number::format($discount, locale: 'id'));

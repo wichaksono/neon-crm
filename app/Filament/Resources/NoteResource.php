@@ -13,6 +13,10 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
+use function dd;
+use function request;
+use function var_dump;
+
 class NoteResource extends Resource
 {
     protected static ?string $model = Note::class;
@@ -122,6 +126,8 @@ class NoteResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('color')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('sorting')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_by')
                     ->numeric()
                     ->sortable(),
@@ -148,8 +154,12 @@ class NoteResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->reorderable('sorting')
+            ->defaultSort('sorting');
     }
+
+
 
     public static function getRelations(): array
     {

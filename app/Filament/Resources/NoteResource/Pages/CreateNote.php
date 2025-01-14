@@ -16,6 +16,7 @@ class CreateNote extends CreateRecord
 
     protected function mutateFormDataBeforeCreate($data): array
     {
+        $data['description'] = json_encode($data['description']);
         $data['created_by'] = auth()->id();
         return $data;
     }
