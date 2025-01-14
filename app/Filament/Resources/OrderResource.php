@@ -13,6 +13,8 @@ use App\Models\Discount;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Tax;
+use Awcodes\TableRepeater\Components\TableRepeater;
+use Awcodes\TableRepeater\Header;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -42,6 +44,7 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
+
                 Forms\Components\Section::make()
                     ->columns(4)
                     ->schema([
@@ -61,18 +64,29 @@ class OrderResource extends Resource
                             ->options(Customer::all()->pluck('full_name', 'id'))
                             ->columnSpan(2),
                     ]),
+
                 Forms\Components\Group::make([
-                    Forms\Components\Repeater::make('orderItems')
+                    TableRepeater::make('orderItems')
                         ->label('Order Items')
-                        ->columnSpan([
-                            'md'  => 10,
-                            '2xl' => 6
+                        ->headers([
+                            Header::make('Product')
+                                ->width('calc(60% - 100px)'),
+                            Header::make('Qty')
+                                ->align('center')
+                                ->width('100px'),
+                            Header::make('Unit Price')
+                                ->width('20%'),
+                            Header::make('Total Price')
+                                ->width('20%'),
                         ])
-                        ->columns(12)
+                        ->columnSpan([
+                            '2xl' => 8,
+                            'md'  => 12
+                        ])
                         ->schema([
                             Forms\Components\Group::make([
                                 Forms\Components\Select::make('product_id')
-                                    ->label('Product')
+                                    ->hiddenLabel()
                                     ->required()
                                     ->live()
                                     ->searchable()
@@ -94,18 +108,12 @@ class OrderResource extends Resource
                                     ->options(Product::all()->pluck('name', 'id')),
                                 Forms\Components\TextInput::make('custom_label')
                                     ->hiddenLabel()
-                                    ->placeholder('Custom Label')
-                                    ->columnSpanFull(),
-                            ])->columnSpan([
-                                'md' => 5,
+                                    ->placeholder('Custom Label'),
                             ]),
 
                             Forms\Components\TextInput::make('quantity')
                                 ->required()
                                 ->numeric()
-                                ->columnSpan([
-                                    'md' => 1,
-                                ])
                                 ->extraInputAttributes(['class' => 'text-center'])
                                 ->minValue(1)
                                 ->default(1)
@@ -124,23 +132,18 @@ class OrderResource extends Resource
                                 })
                                 ->live()
                                 ->integer(),
+
                             Forms\Components\TextInput::make('unit_price')
                                 ->prefix('Rp')
                                 ->placeholder('0.00')
                                 ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                                 ->extraInputAttributes(['class' => 'text-right'])
-                                ->columnSpan([
-                                    'md' => 3,
-                                ])
                                 ->disabled(),
                             Forms\Components\TextInput::make('total_price')
                                 ->prefix('Rp')
                                 ->placeholder(0.00)
                                 ->formatStateUsing(fn($state) => Number::format($state ?? 0, locale: 'id'))
                                 ->extraInputAttributes(['class' => 'text-right'])
-                                ->columnSpan([
-                                    'md' => 3,
-                                ])
                                 ->disabled(),
                         ])
                         ->reorderable(false)
@@ -150,16 +153,12 @@ class OrderResource extends Resource
                     Forms\Components\Repeater::make('discounts')
                         ->columnSpan([
                             '2xl' => 2,
-                            'md'  => 5
+                            'md'  => 6
                         ])
-                        ->schema([
-                            Forms\Components\Select::make('discount_id')
-                                ->hiddenLabel()
-                                ->options(Discount::all()->pluck('name', 'id'))
-                                ->columnSpan([
-                                    'md' => 5,
-                                ]),
-                        ])
+                        ->simple(Forms\Components\Select::make('discount_id')
+                            ->hiddenLabel()
+                            ->options(Discount::all()->pluck('name', 'id'))
+                        )
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
 
@@ -167,26 +166,22 @@ class OrderResource extends Resource
                     Forms\Components\Repeater::make('taxes')
                         ->columnSpan([
                             '2xl' => 2,
-                            'md'  => 5
+                            'md'  => 6
                         ])
-                        ->schema([
-                            Forms\Components\Select::make('tax_id')
-                                ->hiddenLabel()
-                                ->options(Tax::all()->pluck('name', 'id'))
-                                ->columnSpan([
-                                    'md' => 5,
-                                ]),
-                        ])
+                        ->simple(Forms\Components\Select::make('tax_id')
+                            ->hiddenLabel()
+                            ->options(Tax::all()->pluck('name', 'id'))
+                        )
                         ->reorderable(false)
                         ->reorderableWithDragAndDrop(false),
                 ])
-                    ->live()
-                    // After adding a new row, we need to update the totals
-                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
-                        self::updateTotals($get, $set);
-                    })
-                    ->columns(10)
-                    ->columnSpanFull(),
+                ->live()
+                // After adding a new row, we need to update the totals
+                ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                    self::updateTotals($get, $set);
+                })
+                ->columns(12)
+                ->columnSpanFull(),
 
                 Forms\Components\Section::make('Calculated Totals')
                     ->columns(2)
@@ -265,6 +260,7 @@ class OrderResource extends Resource
                         Forms\Components\FileUpload::make('attachments')
                             ->hiddenLabel(),
                     ])->columnSpan(1),
+
                 Forms\Components\Section::make('Notes')
                     ->description('Add notes for the order.')
                     ->schema([
@@ -377,7 +373,7 @@ class OrderResource extends Resource
                             ->date(),
                         Infolists\Components\TextEntry::make('status')
                             ->badge()
-                            ->color(fn (string $state): string => match ($state) {
+                            ->color(fn(string $state): string => match ($state) {
                                 'paid' => 'success',
                                 'pending' => 'warning',
                                 'unpaid' => 'danger',
@@ -426,7 +422,7 @@ class OrderResource extends Resource
                     ->schema([
                         Infolists\Components\TextEntry::make('payment_status')
                             ->badge()
-                            ->color(fn (string $state): string => match ($state) {
+                            ->color(fn(string $state): string => match ($state) {
                                 'paid' => 'success',
                                 'pending' => 'warning',
                                 'unpaid' => 'danger',
